@@ -1,0 +1,6 @@
+{
+  "name": "Rapid Hunt - Real-World QR & 3D Meme Collectibles",
+  "description": "Locate real-world items hidden around Rapid Run school, scan secret QR codes with GPS proximity verification, unlock 3D rotating meme relics, trade on the social feed, and top the leaderboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

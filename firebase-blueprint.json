@@ -1,0 +1,127 @@
+{
+  "entities": {
+    "Item": {
+      "title": "Item",
+      "description": "A collectible real-world object located at Rapid Run with QR verification and 3D attributes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "code": { "type": "string", "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 500 },
+        "rarity": { "type": "string", "enum": ["common", "rare", "epic", "legendary", "mythic"] },
+        "category": { "type": "string", "maxLength": 50 },
+        "locationName": { "type": "string", "maxLength": 100 },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "radiusMeters": { "type": "number" },
+        "modelType": { "type": "string", "maxLength": 50 },
+        "modelColor": { "type": "string", "maxLength": 20 },
+        "glowColor": { "type": "string", "maxLength": 20 },
+        "points": { "type": "number" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "code", "rarity", "points"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public profile and game statistics for a player.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["player", "admin"] },
+        "score": { "type": "number" },
+        "level": { "type": "number" },
+        "itemsCount": { "type": "number" },
+        "title": { "type": "string", "maxLength": 100 },
+        "currentStreak": { "type": "number" },
+        "longestStreak": { "type": "number" },
+        "lastActiveDate": { "type": "string", "maxLength": 20 },
+        "streakBonusClaimedToday": { "type": "boolean" },
+        "streakXP": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "displayName", "score", "level"]
+    },
+    "Claim": {
+      "title": "Claim",
+      "description": "Verification record of an item collected by a player at a specific time and GPS proximity.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userDisplayName": { "type": "string", "maxLength": 100 },
+        "itemId": { "type": "string", "maxLength": 128 },
+        "itemName": { "type": "string", "maxLength": 100 },
+        "itemRarity": { "type": "string", "maxLength": 30 },
+        "points": { "type": "number" },
+        "distanceMeters": { "type": "number" },
+        "verified": { "type": "boolean" },
+        "claimedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "itemId", "points", "claimedAt"]
+    },
+    "Trade": {
+      "title": "Trade",
+      "description": "Trade offer posted by a player in the social marketplace.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "fromUserId": { "type": "string", "maxLength": 128 },
+        "fromUserName": { "type": "string", "maxLength": 100 },
+        "offerItemId": { "type": "string", "maxLength": 128 },
+        "offerItemName": { "type": "string", "maxLength": 100 },
+        "offerRarity": { "type": "string", "maxLength": 30 },
+        "lookingFor": { "type": "string", "maxLength": 200 },
+        "status": { "type": "string", "enum": ["open", "completed", "cancelled"] },
+        "acceptedByUserId": { "type": "string", "maxLength": 128 },
+        "acceptedByUserName": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "fromUserId", "offerItemId", "status", "createdAt"]
+    },
+    "FeedItem": {
+      "title": "FeedItem",
+      "description": "Social feed entry celebrating finds, trades, and achievements.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["claim", "trade", "achievement", "levelup"] },
+        "title": { "type": "string", "maxLength": 150 },
+        "content": { "type": "string", "maxLength": 300 },
+        "itemId": { "type": "string", "maxLength": 128 },
+        "likes": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "userName", "type", "title", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/items/{itemId}": {
+      "schema": { "$ref": "#/entities/Item" },
+      "description": "Catalog of real-world objects placed around Rapid Run."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Player profile and leaderboard stats."
+    },
+    "/claims/{claimId}": {
+      "schema": { "$ref": "#/entities/Claim" },
+      "description": "Cryptographically and proximity-verified item claim records."
+    },
+    "/trades/{tradeId}": {
+      "schema": { "$ref": "#/entities/Trade" },
+      "description": "Social marketplace trading requests between players."
+    },
+    "/feed/{feedId}": {
+      "schema": { "$ref": "#/entities/FeedItem" },
+      "description": "Live social feed of school discoveries, level ups, and trades."
+    }
+  }
+}

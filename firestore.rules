@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Test connection handshake
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "lucasoh13m@gmail.com" ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Items Collection (Real objects placed at Rapid Run) ---
+    function isValidItem(data) {
+      return data.keys().hasAll(['id', 'name', 'code', 'rarity', 'points']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.code is string && data.code.size() > 0 && data.code.size() <= 64 &&
+        data.rarity in ['common', 'rare', 'epic', 'legendary', 'mythic'] &&
+        data.points is number && data.points >= 0 && data.points <= 10000;
+    }
+
+    match /items/{itemId} {
+      allow read: if isValidId(itemId);
+      allow create: if isValidId(itemId) && (isAdmin() || isSignedIn()) && isValidItem(incoming());
+      allow update: if isValidId(itemId) && (isAdmin() || isSignedIn()) && isValidItem(incoming());
+      allow delete: if isValidId(itemId) && isAdmin();
+    }
+
+    // --- Users Profiles ---
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['id', 'displayName', 'score', 'level']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100 &&
+        data.score is number && data.score >= 0 &&
+        data.level is number && data.level >= 1;
+    }
+
+    match /users/{userId} {
+      allow read: if isValidId(userId);
+      allow create: if isValidId(userId) && (isOwner(userId) || isAdmin()) && isValidUserProfile(incoming());
+      allow update: if isValidId(userId) && (isOwner(userId) || isAdmin()) && isValidUserProfile(incoming());
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // --- Claims (Verifications of real-world scans) ---
+    function isValidClaim(data) {
+      return data.keys().hasAll(['id', 'userId', 'itemId', 'points', 'claimedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.itemId is string && data.itemId.size() <= 128 &&
+        data.points is number && data.points >= 0 &&
+        data.claimedAt is string && data.claimedAt.size() <= 64;
+    }
+
+    match /claims/{claimId} {
+      allow read: if isValidId(claimId);
+      allow create: if isValidId(claimId) && isSignedIn() && incoming().userId == request.auth.uid && isValidClaim(incoming());
+      allow update: if isValidId(claimId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid)) && isValidClaim(incoming());
+      allow delete: if isValidId(claimId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+    }
+
+    // --- Trades (Player-to-player meme barter) ---
+    function isValidTrade(data) {
+      return data.keys().hasAll(['id', 'fromUserId', 'offerItemId', 'status', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.fromUserId is string && data.fromUserId.size() <= 128 &&
+        data.offerItemId is string && data.offerItemId.size() <= 128 &&
+        data.status in ['open', 'completed', 'cancelled'] &&
+        data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    match /trades/{tradeId} {
+      allow read: if isValidId(tradeId);
+      allow create: if isValidId(tradeId) && isSignedIn() && incoming().fromUserId == request.auth.uid && isValidTrade(incoming());
+      allow update: if isValidId(tradeId) && isSignedIn() && isValidTrade(incoming());
+      allow delete: if isValidId(tradeId) && (isAdmin() || (isSignedIn() && existing().fromUserId == request.auth.uid));
+    }
+
+    // --- Social Feed ---
+    function isValidFeedItem(data) {
+      return data.keys().hasAll(['id', 'userId', 'userName', 'type', 'title', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.userName is string && data.userName.size() <= 100 &&
+        data.type in ['claim', 'trade', 'achievement', 'levelup'] &&
+        data.title is string && data.title.size() <= 150 &&
+        data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    match /feed/{feedId} {
+      allow read: if isValidId(feedId);
+      allow create: if isValidId(feedId) && isSignedIn() && incoming().userId == request.auth.uid && isValidFeedItem(incoming());
+      allow update: if isValidId(feedId) && isSignedIn() && isValidFeedItem(incoming());
+      allow delete: if isValidId(feedId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+    }
+
+    // Admin role bootstrap doc
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
